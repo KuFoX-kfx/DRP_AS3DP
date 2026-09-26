@@ -18,6 +18,11 @@ CLIENT_ID = "YOUR_DISCORD_APPLICATION_ID"
 # image changes per State (see icons_map.py).
 LARGE_IMAGE_KEY = "painter_logo"
 
+# Hover text shown over the large image. Deliberately not a localized
+# string: it is the product's name, identical in every language, and
+# translators should not be asked to invent a spelling for it.
+LARGE_IMAGE_TEXT = "Substance 3D Painter"
+
 # --- Timing (seconds) ------------------------------------------------------
 # How often we push a fresh activity update to Discord while connected.
 UPDATE_INTERVAL = 15

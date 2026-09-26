@@ -26,6 +26,7 @@ Everything user-adjustable is in `src/drp/config.py`:
 | -------------------- | ----------------------------------------------------- |
 | `CLIENT_ID`          | Discord application ID (required)                     |
 | `LARGE_IMAGE_KEY`    | Large icon asset key                                  |
+| `LARGE_IMAGE_TEXT`   | Hover text over the large icon                        |
 | `UPDATE_INTERVAL`    | Seconds between activity refreshes while connected    |
 | `RECONNECT_INTERVAL` | Seconds between reconnect attempts while disconnected |
 | `ACTIVE_LOCALE`      | `"en-us"`, `"ru-ru"`, or your own added locale        |

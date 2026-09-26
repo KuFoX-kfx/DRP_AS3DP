@@ -83,7 +83,7 @@ class PresenceManager:
             details=details,
             state=t(self._current_state.value),
             large_image=config.LARGE_IMAGE_KEY,
-            large_text=t("large_text"),
+            large_text=config.LARGE_IMAGE_TEXT,
             small_image=get_small_image_key(self._current_state),
             small_text=t(self._current_state.value),
         )

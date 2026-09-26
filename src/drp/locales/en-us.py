@@ -10,5 +10,4 @@ STRINGS = {
     "state_exporting": "Exporting textures",
     "details_project": "Project: {project_name}",
     "details_no_project": "No project open",
-    "large_text": "Substance 3D Painter",
 }
