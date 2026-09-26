@@ -30,10 +30,16 @@ UPDATE_INTERVAL = 15
 RECONNECT_INTERVAL = 60
 
 # --- Localization ------------------------------------------------------------
-# Must match a module name inside discord_rpc/locales/ (without .py).
-# To add a language: drop a new locales/<code>.py exposing a STRINGS
-# dict with the same keys as locales/en.py, then set ACTIVE_LOCALE here.
-ACTIVE_LOCALE = "en"
+# ACTIVE_LOCALE must match a module name inside drp/locales/ (without the
+# .py). It doubles as the file name, so it has to be a valid Python module
+# name: use dashes for the language/region pair, e.g. "en-us", "zh-cn".
+# To add a language: drop a new locales/<code>.py exposing a STRINGS dict
+# with the same keys as locales/en-us.py, then set ACTIVE_LOCALE here.
+ACTIVE_LOCALE = "en-us"
+
+# The locale every other one falls back to. It must define every key,
+# and its file must exist - a broken fallback would break all locales.
+FALLBACK_LOCALE = "en-us"
 
 # --- Behaviour ---------------------------------------------------------------
 # If False, the project name is never sent to Discord - only the

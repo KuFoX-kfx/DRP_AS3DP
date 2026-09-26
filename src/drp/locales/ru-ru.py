@@ -1,7 +1,7 @@
 """
 Russian strings. Demonstrates how to add a locale: same keys as
-locales/en.py, translated values. Any key you skip here silently
-falls back to the English text via localization.py.
+locales/en-us.py, translated values. Any key you skip here silently
+falls back to the fallback locale via localization.py.
 """
 
 STRINGS = {

@@ -20,10 +20,15 @@ def _load_locale(code: str) -> dict:
     try:
         module = importlib.import_module(f".locales.{code}", package=__package__)
     except ImportError:
-        if code == "en":
-            raise  # en.py is required and must always exist
-        print(f"[DiscordRPC] Unknown locale '{code}', falling back to 'en'.")
-        return _load_locale("en")
+        if code == config.FALLBACK_LOCALE:
+            # The fallback locale itself is required: without it there is
+            # nothing left to fall back to, so let the error surface.
+            raise
+        print(
+            f"[DiscordRPC] Unknown locale '{code}', "
+            f"falling back to '{config.FALLBACK_LOCALE}'."
+        )
+        return _load_locale(config.FALLBACK_LOCALE)
 
     _cache[code] = module.STRINGS
     return module.STRINGS
@@ -32,14 +37,14 @@ def _load_locale(code: str) -> dict:
 def t(key: str, **kwargs) -> str:
     """Fetch a localized string by key and format it with kwargs.
 
-    Falls back to the English string if the active locale is missing
-    that particular key, and to the raw key itself as a last resort
-    so a typo never crashes the plugin.
+    Falls back to the FALLBACK_LOCALE string if the active locale is
+    missing that particular key, and to the raw key itself as a last
+    resort so a typo never crashes the plugin.
     """
     strings = _load_locale(config.ACTIVE_LOCALE)
     template = strings.get(key)
 
     if template is None:
-        template = _load_locale("en").get(key, key)
+        template = _load_locale(config.FALLBACK_LOCALE).get(key, key)
 
     return template.format(**kwargs)
