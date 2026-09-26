@@ -7,26 +7,26 @@ exporting, and session elapsed time.
 ## Project layout
 
 ```
-src/discord_rpc/           the plugin itself (this folder is what ships)
-    __init__.py             entry point: start_plugin() / close_plugin()
+src/drp/                     the plugin itself (this folder is what ships)
+    __init__.py              entry point: start_plugin() / close_plugin()
     config.py                every tunable constant lives here
     state.py                 the States the plugin can report (enum)
     presence_manager.py      talks to Discord, knows nothing about Painter
     events.py                talks to Painter, knows nothing about Discord
     localization.py          locale loader with English fallback
     locales/
-        en.py                 required - also the fallback locale
-        ru.py                 example second locale
+        en.py                required - also the fallback locale
+        ru.py                second locale
     assets/
-        icons_map.py          State -> Discord art asset key
+        icons_map.py         State -> Discord art asset key
     vendor/
-        pypresence/            vendored, dependency-free copy of pypresence (MIT)
+        pypresence/          vendored, dependency-free copy of pypresence (MIT)
 
 build/
     build.sh                 Linux/macOS packaging script
     build.bat                Windows packaging script
 
-VERSION                     current plugin version, read by the build scripts
+README.md                    this file
 ```
 
 ## One-time setup: Discord Application ID
@@ -50,7 +50,7 @@ Everything user-adjustable is in `src/discord_rpc/config.py`:
 
 | Setting              | Effect                                                |
 |----------------------|--------------------------------------------------------|
-| `CLIENT_ID`           | Your Discord application ID (required)                |
+| `CLIENT_ID`           | Discord application ID (required)                |
 | `LARGE_IMAGE_KEY`     | Large icon asset key                                   |
 | `UPDATE_INTERVAL`     | Seconds between activity refreshes while connected     |
 | `RECONNECT_INTERVAL`  | Seconds between reconnect attempts while disconnected  |
@@ -76,13 +76,6 @@ keep working.
 
 # Windows
 build\build.bat
-```
-
-This produces `dist/discord_rpc-<version>.zip`. The version comes from
-the `VERSION` file at the repo root, or pass one explicitly:
-
-```bash
-./build/build.sh 1.2.0
 ```
 
 ## Installing the plugin
