@@ -1,8 +1,34 @@
 # Discord Rich Presence for Substance 3D Painter
 
 Shows what you're doing in Substance 3D Painter as a Discord activity
-status: current project name, whether you're texturing / baking /
-exporting, and session elapsed time.
+status(Rich Presence). The plugin is in beta version status, there may be bugs
+
+## Installing the plugin
+
+Extract the `DRP_AS3DP-python.zip` from the releases zip directly into
+Painter's Python plugins folder:
+
+| OS          | Path                                               |
+| ----------- | -------------------------------------------------- |
+| Windows     | `Adobe\Adobe Substance 3D Painter\python\plugins\` |
+| macOS       | `Adobe/Adobe Substance 3D Painter/python/plugins/` |
+| Linux(WTF?) | `Adobe/Adobe Substance 3D Painter/python/plugins/` |
+
+Then in Painter: **Python > drp** to enable it.
+
+## Configuration
+
+Everything user-adjustable is in `src/discord_rpc/config.py`:
+
+| Setting              | Effect                                                |
+| -------------------- | ----------------------------------------------------- |
+| `CLIENT_ID`          | Discord application ID (required)                     |
+| `LARGE_IMAGE_KEY`    | Large icon asset key                                  |
+| `UPDATE_INTERVAL`    | Seconds between activity refreshes while connected    |
+| `RECONNECT_INTERVAL` | Seconds between reconnect attempts while disconnected |
+| `ACTIVE_LOCALE`      | `"en"`, `"ru"`, or your own added locale              |
+| `SHOW_PROJECT_NAME`  | Set `False` to never send the project name to Discord |
+| `SHOW_ELAPSED_TIME`  | Set `False` to hide the session timer                 |
 
 ## Project layout
 
@@ -28,77 +54,45 @@ build/
 
 README.md                    this file
 ```
-
-## One-time setup: Discord Application ID
+## If you want change Discord Application ID (Not trusted my application or want change)
 
 Rich Presence is identified by a `client_id` - Discord will not accept
-a status update without one. This is a normal, unreviewed registration,
-not a public app listing.
+a status update without one
 
 1. Go to <https://discord.com/developers/applications> and create a
-   new application (its name is what shows up next to your status).
+   new application (name is what shows up next to your status).
 2. Copy the **Application ID** from the General Information tab into
-   `src/discord_rpc/config.py` as `CLIENT_ID`.
+   `src/drp/config.py` as `CLIENT_ID`.
 3. Under **Rich Presence -> Art Assets**, upload your icons using
    exactly the keys referenced in `config.py` (`LARGE_IMAGE_KEY`) and
    `assets/icons_map.py` (one key per `State`, e.g. `icon_texturing`,
    `icon_baking`, `icon_exporting`, `icon_idle`).
 
-## Configuration
-
-Everything user-adjustable is in `src/discord_rpc/config.py`:
-
-| Setting              | Effect                                                |
-|----------------------|--------------------------------------------------------|
-| `CLIENT_ID`           | Discord application ID (required)                |
-| `LARGE_IMAGE_KEY`     | Large icon asset key                                   |
-| `UPDATE_INTERVAL`     | Seconds between activity refreshes while connected     |
-| `RECONNECT_INTERVAL`  | Seconds between reconnect attempts while disconnected  |
-| `ACTIVE_LOCALE`       | `"en"`, `"ru"`, or your own added locale               |
-| `SHOW_PROJECT_NAME`   | Set `False` to never send the project name to Discord  |
-| `SHOW_ELAPSED_TIME`   | Set `False` to hide the session timer                  |
-
 ## Adding a locale
 
-1. Create `src/discord_rpc/locales/<code>.py`.
-2. Copy the `STRINGS` dict from `locales/en.py` and translate the values.
-3. Set `ACTIVE_LOCALE = "<code>"` in `config.py`.
+Want to help translate the plugin into your language? Great! Here's how:
 
-Any key you don't translate falls back to English automatically -
-you never have to provide a complete translation for the plugin to
-keep working.
+1. Fork the repository and create a new branch(example): `git checkout -b locale/my-language-code`
+2. Copy `src/drp/locales/example.py` and replace `example` to your language code in `IETF BCP 47` format (example: `ru-RU`, `en-US`, etc.):
+3. For the plugin to work correctly, you don’t need to translate all the words. Translate only what you’re sure of.
+4. (Optional) Add yourself to the **Contributors** section below with
+   your name/GitHub username and the language(s) you translated.
+5. Open a pull request with your changes.
 
 ## Building a distributable zip
 
+On Linux and MacOS run `build.sh`
 ```bash
-# Linux / macOS
 ./build/build.sh
+```
 
-# Windows
+On Windows run `build.bat`
+```
 build\build.bat
 ```
 
-## Installing the plugin
+## Third-party software 
 
-Extract the `discord_rpc` folder from the built zip directly into
-Painter's Python plugins folder:
+This project vendors the following library: 
 
-| OS      | Path                                                              |
-|---------|--------------------------------------------------------------------|
-| Windows | `%userprofile%\Documents\Adobe\Adobe Substance 3D Painter\python\plugins\` |
-| macOS   | `/Users/<user>/Documents/Adobe/Adobe Substance 3D Painter/python/plugins/` |
-| Linux   | `/home/<user>/Documents/Adobe/Adobe Substance 3D Painter/python/plugins/`  |
-
-Then in Painter: **Python > discord_rpc** to enable it. No manifest
-file is needed - Painter discovers any folder with an `__init__.py`
-exposing `start_plugin()` / `close_plugin()` automatically.
-
-## Notes / things worth double-checking on your Painter version
-
-- `events.py` looks up event class names (`ExportTexturesStarted`,
-  `BakingProcessStarted`, etc.) dynamically and skips + logs any that
-  don't exist in your installed API version rather than crashing.
-  If a state transition never fires, check `dir(substance_painter.event)`
-  in the Python console to see what's actually available.
-- Qt binding (PySide2 vs PySide6) is chosen automatically based on
-  `substance_painter.application.version_info()`.
+- [qwertyquerty/pypresence](https://github.com/qwertyquerty/pypresence) - MIT License
