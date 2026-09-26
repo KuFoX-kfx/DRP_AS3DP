@@ -2,7 +2,7 @@
 # Packages src/drp into dist/DRP_AS3DP-python.zip
 #
 # Usage:
-#   ./build/build.sh            # uses version from VERSION file
+#   ./build/build.sh
 
 set -euo pipefail
 

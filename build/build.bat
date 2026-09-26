@@ -2,7 +2,7 @@
 REM Packages src\drp into dist\DRP_AS3DP-python.zip
 REM
 REM Usage:
-REM   build\build.bat            uses version from VERSION file
+REM   build\build.bat
 
 setlocal enabledelayedexpansion
 
@@ -18,7 +18,7 @@ if not exist "%SRC_DIR%" (
     exit /b 1
 )
 
-echo Building discord_rpc v%VERSION%...
+echo Building DRP_AS3DP-python...
 
 if exist "%DIST_DIR%" rmdir /s /q "%DIST_DIR%"
 mkdir "%DIST_DIR%\staging"
