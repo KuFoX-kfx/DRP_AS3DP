@@ -15,7 +15,7 @@ CLIENT_ID = "YOUR_DISCORD_APPLICATION_ID"
 
 # Keys of the images uploaded in the Developer Portal under
 # "Rich Presence -> Art Assets". The large image is constant; the small
-# image changes per State (see assets/icons_map.py).
+# image changes per State (see icons_map.py).
 LARGE_IMAGE_KEY = "painter_logo"
 
 # --- Timing (seconds) ------------------------------------------------------

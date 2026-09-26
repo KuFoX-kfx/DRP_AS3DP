@@ -45,7 +45,7 @@ want to publish your own, you'll need your own ID.
    `src/drp/config.py` as `CLIENT_ID`.
 3. Under **Rich Presence -> Art Assets**, upload your icons using exactly
    the keys referenced in `config.py` (`LARGE_IMAGE_KEY`) and
-   `assets/icons_map.py` - one key per `State`, e.g. `icon_texturing`,
+   `icons_map.py` - one key per `State`, e.g. `icon_texturing`,
    `icon_baking`, `icon_exporting`, `icon_idle`.
 
 ## Adding a locale
@@ -91,11 +91,10 @@ src/drp/                     the plugin itself (this folder is what ships)
     presence_manager.py      talks to Discord, knows nothing about Painter
     events.py                talks to Painter, knows nothing about Discord
     localization.py          locale loader with fallback to FALLBACK_LOCALE
+    icons_map.py             State -> Discord art asset key
     locales/
         en-us.py             required - also the fallback locale
         ru-ru.py             second locale
-    assets/
-        icons_map.py         State -> Discord art asset key
     vendor/
         pypresence/          vendored, dependency-free copy of pypresence (MIT)
 

@@ -1,8 +1,8 @@
 """
 Central definition of the states this plugin can report.
 
-Adding a new state means: add it here, add its icon in
-assets/icons_map.py, and add its text in every file under locales/.
+Adding a new state means: add it here, add its icon key in
+icons_map.py, and add its text in every file under locales/.
 Nothing else in the codebase needs to change.
 """
 

@@ -7,7 +7,7 @@ or add an icon for a new state - nothing else in the codebase
 references these strings directly.
 """
 
-from ..state import State
+from .state import State
 
 _SMALL_IMAGE_KEYS = {
     State.IDLE: "icon_idle",

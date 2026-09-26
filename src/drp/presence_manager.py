@@ -13,7 +13,7 @@ import time
 from . import config
 from .state import State
 from .localization import t
-from .assets.icons_map import get_small_image_key
+from .icons_map import get_small_image_key
 from .vendor.pypresence import Presence
 
 
