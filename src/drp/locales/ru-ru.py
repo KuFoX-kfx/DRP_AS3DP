@@ -11,6 +11,7 @@ STRINGS = {
     "state_exporting": "Экпорт текстур",
     "details_project": "Проект: {project_name}",
     "details_no_project": "Проект не открыт",
+    "details_unsaved_project": "Проект: Без названия",
     "menu_status": "Состояние: {status}",
     "menu_settings": "Настройки...",
     "menu_show_in_discord": "Показывать в Discord",

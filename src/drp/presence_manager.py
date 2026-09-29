@@ -99,19 +99,39 @@ class PresenceManager:
         self._current_project = project_name
         self.push()
 
+    def _build_details(self) -> str:
+        """The details line: what the user is working on, or that they
+        are working on nothing.
+
+        A project that has never been saved has no name to report, which
+        is not the same as having no project at all. The State is what
+        tells the two apart, because telling the user "no project open"
+        while Painter visibly has an unsaved one open would be a lie.
+
+        Wording is chosen here, at the moment it is sent, rather than
+        once when the project is opened - otherwise a language change
+        would leave the line stuck in the old language until the next
+        state change.
+        """
+        if not settings.get("SHOW_PROJECT_NAME"):
+            return t("details_no_project")
+
+        if self._current_project:
+            return t("details_project", project_name=self._current_project)
+
+        if self._current_state is State.IDLE:
+            return t("details_no_project")
+
+        return t("details_unsaved_project")
+
     def push(self):
         """Send the current state to Discord, if connected. Safe to call
         at any time, connected or not."""
         if not self.is_connected:
             return
 
-        if settings.get("SHOW_PROJECT_NAME") and self._current_project:
-            details = t("details_project", project_name=self._current_project)
-        else:
-            details = t("details_no_project")
-
         payload = dict(
-            details=details,
+            details=self._build_details(),
             state=t(self._current_state.value),
             large_image=config.LARGE_IMAGE_KEY,
             large_text=config.LARGE_IMAGE_TEXT,

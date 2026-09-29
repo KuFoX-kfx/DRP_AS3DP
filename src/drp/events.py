@@ -17,10 +17,17 @@ _manager = None
 _connections = []
 
 
-def _current_project_name() -> str:
+def _current_project_name():
+    """The open project's name, or None if it has never been saved.
+
+    None is deliberately not a stand-in for "no project open": the two
+    are told apart downstream, by the State, because a project that
+    exists without a name yet is not the same thing as an empty Painter
+    and must not be reported as one.
+    """
     path = substance_painter.project.file_path()
     if not path:
-        return "Untitled"
+        return None
     return os.path.splitext(os.path.basename(path))[0]
 
 

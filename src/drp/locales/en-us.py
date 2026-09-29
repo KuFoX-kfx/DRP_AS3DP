@@ -10,6 +10,7 @@ STRINGS = {
     "state_exporting": "Exporting textures",
     "details_project": "Project: {project_name}",
     "details_no_project": "No project open",
+    "details_unsaved_project": "Project: Untitled",
     "menu_status": "Status: {status}",
     "menu_settings": "Settings...",
     "menu_show_in_discord": "Show in Discord",
