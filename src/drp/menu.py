@@ -52,11 +52,18 @@ def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
     about_action = menu.addAction(localization.t("menu_about"))
     about_action.triggered.connect(lambda: show_about(manager, menu))
 
-    # Everything built above is a snapshot taken once, at startup. The
-    # status and the check mark have to be brought up to date every time
-    # the menu is actually opened.
+    # Every label above is a translation, and the language is a setting the
+    # user can change while the plugin is running, so the wording cannot be
+    # frozen at startup. _refresh re-translates all of it every time the
+    # menu is actually opened, together with the status and the check mark.
+    labels = (
+        (settings_action, "menu_settings"),
+        (enabled_action, "menu_show_in_discord"),
+        (about_action, "menu_about"),
+    )
+
     menu.aboutToShow.connect(
-        lambda: _refresh(manager, status_action, enabled_action)
+        lambda: _refresh(manager, status_action, enabled_action, labels)
     )
 
     return menu
@@ -68,8 +75,15 @@ def destroy(menu: QtWidgets.QMenu):
     substance_painter.ui.delete_ui_element(menu)
 
 
-def _refresh(manager, status_action, enabled_action):
-    """Bring the status line and the check mark in line with the manager."""
+def _refresh(manager, status_action, enabled_action, labels):
+    """Bring the menu in line with the current language and status.
+
+    Called every time the menu is opened, which is what makes a language
+    change take effect without the plugin being reloaded.
+    """
+    for action, key in labels:
+        action.setText(localization.t(key))
+
     status_action.setText(
         localization.t("menu_status", status=status.label(manager.status))
     )

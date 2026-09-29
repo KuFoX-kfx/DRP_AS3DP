@@ -5,8 +5,9 @@ Each locale lives in locales/<code>.py and exposes a STRINGS dict.
 Adding a new language means adding one file there - nothing in this
 module or anywhere else needs to change.
 
-Which locale is active is a user setting, so available_locales() reports
-what can be chosen and clear_cache() lets a change take effect at once.
+Which locale is active is a user setting, so active_locale() reports the
+one in effect, available_locales() reports what can be chosen, and
+clear_cache() lets a change take effect at once.
 """
 
 import importlib
@@ -26,6 +27,23 @@ def available_locales() -> list:
     return sorted(
         path.stem for path in locales_dir.glob("*.py") if path.stem != "__init__"
     )
+
+
+def active_locale() -> str:
+    """The locale in effect right now.
+
+    That is the user's setting, not the config.py constant: the constant
+    is only the default a fresh installation starts from, and picking a
+    language in the settings dialog has to actually change the language
+    used here.
+
+    settings is imported inside the function because it needs this module
+    to validate the locale it stores, so importing it at the top would
+    make the two modules import each other.
+    """
+    from . import settings
+
+    return settings.get("ACTIVE_LOCALE")
 
 
 def clear_cache():
@@ -62,7 +80,7 @@ def t(key: str, **kwargs) -> str:
     missing that particular key, and to the raw key itself as a last
     resort so a typo never crashes the plugin.
     """
-    strings = _load_locale(config.ACTIVE_LOCALE)
+    strings = _load_locale(active_locale())
     template = strings.get(key)
 
     if template is None:

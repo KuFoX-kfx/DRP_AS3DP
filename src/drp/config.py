@@ -55,6 +55,11 @@ RECONNECT_INTERVAL = 60
 # with the same keys as locales/en-us.py - it then appears in the settings
 # dialog on its own. This is the default a fresh installation starts on;
 # users pick their own from that dialog.
+#
+# Despite the name, this is not what localization.py looks up: the locale
+# in effect is the user's setting, reached through
+# localization.active_locale(). Reading this constant directly would
+# ignore their choice.
 ACTIVE_LOCALE = "en-us"
 
 # The locale every other one falls back to. It must define every key,
