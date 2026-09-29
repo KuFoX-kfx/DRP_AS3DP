@@ -170,19 +170,55 @@ Want to help translate the plugin into your language? Great! Here's how:
 
 ## Building a distributable zip
 
-On Linux and macOS:
-
 ```bash
 ./build/build.sh
 ```
 
-On Windows:
+That is the only build script, and it produces `dist/DRP_AS3DP-python.zip`.
+On Windows, run it from a Git Bash shell: `bash build/build.sh`.
+
+### Required tools
+
+`bash`, `curl`, `tar` and `zip`.
+
+On Linux and macOS all four come with the system. On Windows the easiest
+route is [Git for Windows](https://gitforwindows.org/), which provides
+bash, curl and tar - but **not** `zip`, which has to be added separately:
 
 ```bat
-build\build.bat
+choco install zip
 ```
 
-Both produce `dist/DRP_AS3DP-python.zip`.
+An MSYS2 shell (`pacman -S zip`) or a WSL shell work just as well. The
+script checks for the tools before it starts and names the missing one,
+rather than failing halfway through.
+
+There used to be a `build.bat` alongside the shell script. It is gone on
+purpose: the two kept drifting apart, and one script is easier to keep
+correct than two that have to agree. If you need to build on Windows,
+use a bash shell as above.
+
+### Dependencies are downloaded, not vendored
+
+No third-party code is stored in this repository. `build.sh` downloads
+`pypresence` from PyPI into a staging folder, and only that staging copy
+ends up in the zip - so there is no vendored copy to keep in sync with
+upstream, and no risk of shipping a patched fork by accident.
+
+The version is a single variable at the top of the script:
+
+```bash
+PYPRESENCE_VERSION="4.6.2"
+```
+
+Changing it is the whole procedure: the download URL, the archive name
+and the destination path are all derived from the name and this value.
+The script fails with a clear message if that version does not exist on
+PyPI.
+
+A consequence of this: the plugin cannot be run straight from a fresh
+clone, because `src/drp/vendor/` does not exist until a build has filled
+it in. Build once, and the folder is ready to drop into Painter.
 
 ## Project layout
 
@@ -190,7 +226,8 @@ Both produce `dist/DRP_AS3DP-python.zip`.
 src/ddp/                     source artwork for the Discord art assets
                              (512x512 PNGs, not shipped with the plugin)
 
-src/drp/                     the plugin itself (this folder is what ships)
+src/drp/                     the plugin's own code; what ships, plus
+                             the dependencies build.sh downloads
     __init__.py              entry point: start_plugin() / close_plugin();
                              owns the timers and reacts to settings
     config.py                the default for every tunable constant
@@ -209,22 +246,29 @@ src/drp/                     the plugin itself (this folder is what ships)
     locales/
         en-us.py             required - also the fallback locale
         ru-ru.py             second locale
-    vendor/
-        pypresence/          vendored, dependency-free copy of pypresence (MIT)
 
 build/
-    build.sh                 Linux/macOS packaging script
-    build.bat                Windows packaging script
+    build.sh                 packaging script: copies the plugin, downloads
+                             its dependencies, writes the zip
 
 dist/                        build output, not tracked by git
 README.md                    this file
 ```
 
+`src/drp/vendor/` is the one folder that is not in the repository. It is
+created inside the staging copy by the build, holds the downloaded
+`pypresence` package, and exists only in the finished zip.
+
 ## Third-party software
 
-This project vendors the following library:
+The plugin has no runtime dependencies of its own. It uses one
+third-party package, downloaded from PyPI by `build/build.sh` at build
+time and pinned by `PYPRESENCE_VERSION` at the top of that script:
 
 - [qwertyquerty/pypresence](https://github.com/qwertyquerty/pypresence) - MIT License
+
+Its `LICENSE` is copied into the shipped package alongside the code, so
+the zip carries the terms of the code it contains.
 
 ## Contributors
 

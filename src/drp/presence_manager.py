@@ -1,5 +1,5 @@
 """
-Thin wrapper around the vendored pypresence client.
+Thin wrapper around the pypresence client.
 
 This module is the only place that talks to Discord. It has no idea
 Substance Painter exists - it just knows how to connect, push an
