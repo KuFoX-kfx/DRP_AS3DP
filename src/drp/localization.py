@@ -4,13 +4,34 @@ Tiny localization loader.
 Each locale lives in locales/<code>.py and exposes a STRINGS dict.
 Adding a new language means adding one file there - nothing in this
 module or anywhere else needs to change.
+
+Which locale is active is a user setting, so available_locales() reports
+what can be chosen and clear_cache() lets a change take effect at once.
 """
 
 import importlib
+from pathlib import Path
 
 from . import config
 
 _cache = {}
+
+
+def available_locales() -> list:
+    """Every locale that can actually be selected, read from the file
+    names in locales/. The file name *is* the locale code, so a
+    directory listing is all it takes - a new translation shows up in
+    the settings dialog the moment the file is added."""
+    locales_dir = Path(__file__).resolve().parent / "locales"
+    return sorted(
+        path.stem for path in locales_dir.glob("*.py") if path.stem != "__init__"
+    )
+
+
+def clear_cache():
+    """Forget the locales loaded so far, so that the next lookup picks up
+    a different language. Called when the user changes it."""
+    _cache.clear()
 
 
 def _load_locale(code: str) -> dict:

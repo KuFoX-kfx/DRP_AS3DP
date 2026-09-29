@@ -4,7 +4,17 @@ Central configuration for the Discord Rich Presence plugin.
 Everything a developer might reasonably want to tweak lives here as a
 plain constant. Nothing in the rest of the codebase hardcodes these
 values directly - they always come through this module.
+
+These are the *defaults*. Anything the user is allowed to change is
+overridden at runtime by drp/settings.py, and the settings listed below
+can be edited from the plugin's own menu. Changing a constant here
+changes what a fresh installation starts from, and what "Restore
+defaults" in the settings dialog puts back.
 """
+
+# --- Plugin ------------------------------------------------------------------
+# Shown in the plugin's About box. Bump it with every release.
+PLUGIN_VERSION = "1.0.0"
 
 # --- Discord application --------------------------------------------------
 # Application (client) ID from https://discord.com/developers/applications
@@ -24,6 +34,9 @@ LARGE_IMAGE_KEY = "painter_logo"
 LARGE_IMAGE_TEXT = "Substance 3D Painter"
 
 # --- Timing (seconds) ------------------------------------------------------
+# Both of these are user settings, listed in settings.py, which is also
+# where their accepted ranges live.
+#
 # How often we push a fresh activity update to Discord while connected.
 UPDATE_INTERVAL = 15
 
@@ -39,14 +52,19 @@ RECONNECT_INTERVAL = 60
 # .py). It doubles as the file name, so it has to be a valid Python module
 # name: use dashes for the language/region pair, e.g. "en-us", "zh-cn".
 # To add a language: drop a new locales/<code>.py exposing a STRINGS dict
-# with the same keys as locales/en-us.py, then set ACTIVE_LOCALE here.
+# with the same keys as locales/en-us.py - it then appears in the settings
+# dialog on its own. This is the default a fresh installation starts on;
+# users pick their own from that dialog.
 ACTIVE_LOCALE = "en-us"
 
 # The locale every other one falls back to. It must define every key,
 # and its file must exist - a broken fallback would break all locales.
+# Not a user setting: it is the safety net, so it stays put.
 FALLBACK_LOCALE = "en-us"
 
 # --- Behaviour ---------------------------------------------------------------
+# The two below are user settings, listed in settings.py.
+#
 # If False, the project name is never sent to Discord - only the
 # generic "no project open" / state text is shown. Useful for users
 # who work on projects under NDA and don't want the name broadcast.

@@ -22,19 +22,75 @@ plugin. If it doesn't, see
 
 ## Configuration
 
-Everything user-adjustable is in `src/drp/config.py`:
+### Settings
+
+Painter gives Python plugins no configure button of their own, so the plugin
+adds its own top-level menu, **Discord RPC**:
+
+```
+Discord RPC ▾
+├── Status: Connected
+├── Settings...
+├── [✓] Show in Discord
+└── About DRP AS3DP
+```
+
+The status line updates every time you open the menu, and is the quickest way
+to tell *all is well* from *Discord isn't running* from *this plugin is
+misconfigured* - the last of which is usually a wrong `CLIENT_ID`. There are
+no popups: Discord being closed is normal, so the plugin never interrupts you
+about it.
+
+`Show in Discord` unchecks to stop reporting altogether without disabling the
+plugin; check it again to resume.
+
+**Settings...** offers:
+
+| Setting              | Effect                                          | Range      |
+| -------------------- | ----------------------------------------------- | ---------- |
+| Show project name    | Off sends only the activity, never the name      |            |
+| Show elapsed time    | Off hides the session timer                      |            |
+| Update interval      | Seconds between activity refreshes               | 5 - 300    |
+| Reconnect interval   | Seconds between reconnect attempts               | 5 - 600    |
+| Language             | Any locale in `src/drp/locales/`                 |            |
+
+Changes take effect immediately - no restart, and no reload of the plugin.
+
+### Where the settings are stored
+
+`src/drp/settings.json`, created with the defaults the first time the plugin
+starts. The file is plain JSON, written in the plugin's own folder, and is
+meant to be readable and editable by hand if you'd rather not use the dialog.
+Key names are exactly the `config.py` constant names.
+
+The plugin rewrites the file when you save; a damaged or unreadable one is
+moved to `settings.json.bak` and rebuilt from the defaults, so a bad edit
+costs you the settings but never the plugin. A value out of range falls back
+to its default on its own and leaves its neighbours alone.
+
+If the plugin folder can't be written to - a system-wide install, typically -
+settings apply for the session and the dialog says so, instead of pretending
+to have saved them.
+
+### Developer constants
+
+Everything else is in `src/drp/config.py`. These are the *defaults*: changing
+one changes what a fresh install starts from, and what **Restore defaults**
+puts back. The released zip ships a working `CLIENT_ID`, so you normally have
+nothing to change here.
 
 | Setting              | Effect                                                     |
 | -------------------- | ---------------------------------------------------------- |
+| `PLUGIN_VERSION`     | Shown in the About box                                     |
 | `CLIENT_ID`          | Discord application ID - the bundled one is fine           |
 | `LARGE_IMAGE_KEY`    | Large icon asset key                                       |
 | `LARGE_IMAGE_TEXT`   | Hover text over the large icon                             |
-| `UPDATE_INTERVAL`    | Seconds between activity refreshes while connected         |
-| `RECONNECT_INTERVAL` | Seconds between reconnect attempts while disconnected      |
-| `ACTIVE_LOCALE`      | `"en-us"`, `"ru-ru"`, or your own added locale             |
 | `FALLBACK_LOCALE`    | Locale used for missing keys, should stay `"en-us"`        |
-| `SHOW_PROJECT_NAME`  | Set `False` to never send the project name to Discord      |
-| `SHOW_ELAPSED_TIME`  | Set `False` to hide the session timer                      |
+
+`SHOW_PROJECT_NAME`, `SHOW_ELAPSED_TIME`, `UPDATE_INTERVAL`,
+`RECONNECT_INTERVAL` and `ACTIVE_LOCALE` live here too - they are the defaults
+behind the settings above, and are only worth editing if you're building your
+own version.
 
 ## Discord application and icons
 
@@ -101,7 +157,10 @@ Want to help translate the plugin into your language? Great! Here's how:
 2. Copy `src/drp/locales/en-us.py` to `src/drp/locales/<code>.py` and
    translate the values. The file name *is* the locale code, and it has to
    be a valid Python module name, so use dashes: `fr-fr.py`, `de-de.py`,
-   `zh-cn.py` - not `fr_FR` or `fr-FR`.
+   `zh-cn.py` - not `fr_FR` or `fr-FR`. Nothing else needs to change: the
+   new language shows up in the settings dialog on its own, and becomes the
+   new `ACTIVE_LOCALE` default in `config.py` if you want it to be the
+   one a fresh install starts on.
 3. You don't need to translate every string. Any key you leave in English
    silently falls back to `FALLBACK_LOCALE`, so partial translations are
    fine.
@@ -132,8 +191,16 @@ src/ddp/                     source artwork for the Discord art assets
                              (512x512 PNGs, not shipped with the plugin)
 
 src/drp/                     the plugin itself (this folder is what ships)
-    __init__.py              entry point: start_plugin() / close_plugin()
-    config.py                every tunable constant lives here
+    __init__.py              entry point: start_plugin() / close_plugin();
+                             owns the timers and reacts to settings
+    config.py                the default for every tunable constant
+    settings.json            the user's own settings (created at runtime,
+                             gitignored, not shipped in the zip)
+    settings.py              reads/validates settings.json, knows no Qt
+    settings_dialog.py       the settings form; produces values, saves nothing
+    menu.py                  the plugin's own menu, with the status readout
+    status.py                what we know about the Discord link, and its wording
+    qt.py                    PySide2 or PySide6, whichever Painter ships
     state.py                 the States the plugin can report (enum)
     presence_manager.py      talks to Discord, knows nothing about Painter
     events.py                talks to Painter, knows nothing about Discord

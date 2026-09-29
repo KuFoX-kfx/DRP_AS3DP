@@ -26,7 +26,13 @@ mkdir -p "$DIST_DIR/staging"
 # Copy the plugin package, then strip anything that shouldn't ship:
 # caches, bytecode, and OS cruft. Plain cp+find instead of rsync so
 # this doesn't depend on rsync being installed.
-cp -r "$SRC_DIR" "$DIST_DIR/staging/"
+cp -r "$SRC_DIR" "$DIST_DIR/staging/drp"
+
+# The author's own settings must never ship: a release zip is unpacked
+# on top of an existing install, so everyone would silently inherit the
+# author's language and intervals.
+rm -f "$DIST_DIR/staging/drp/settings.json" "$DIST_DIR/staging/drp/settings.json.bak"
+
 find "$DIST_DIR/staging" -type d -name '__pycache__' -exec rm -rf {} +
 find "$DIST_DIR/staging" -type f \( -name '*.pyc' -o -name '.DS_Store' \) -delete
 

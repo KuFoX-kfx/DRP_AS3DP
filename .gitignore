@@ -3,6 +3,10 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Written by the plugin at runtime, one per installed copy
+src/drp/settings.json
+src/drp/settings.json.bak
+
 # C extensions
 *.so
 

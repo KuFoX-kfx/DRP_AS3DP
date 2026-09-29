@@ -25,6 +25,13 @@ mkdir "%DIST_DIR%\staging"
 
 xcopy "%SRC_DIR%" "%DIST_DIR%\staging\drp\" /e /i /q >nul
 
+REM The author's own settings must never ship: a release zip is unpacked
+REM on top of an existing install, so everyone would silently inherit the
+REM author's language and intervals. The paths are inside staging\drp,
+REM where xcopy put them.
+del /q "%DIST_DIR%\staging\drp\settings.json" >nul 2>&1
+del /q "%DIST_DIR%\staging\drp\settings.json.bak" >nul 2>&1
+
 REM Strip caches / bytecode that shouldn't ship.
 for /d /r "%DIST_DIR%\staging" %%D in (__pycache__) do (
     if exist "%%D" rmdir /s /q "%%D"
