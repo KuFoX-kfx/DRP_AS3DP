@@ -11,7 +11,7 @@ values directly - they always come through this module.
 # Rich Presence cannot work without this: it is how Discord knows which
 # application is reporting the activity, and which uploaded art assets
 # to use for the icons below.
-CLIENT_ID = "YOUR_DISCORD_APPLICATION_ID"
+CLIENT_ID = "1553161133723090944"
 
 # Keys of the images uploaded in the Developer Portal under
 # "Rich Presence -> Art Assets". The large image is constant; the small
