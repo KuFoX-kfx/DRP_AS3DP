@@ -90,7 +90,7 @@ def _refresh(menu, manager, updates, actions):
     the update button back to normal after an update ran in the
     background while the menu was shut.
     """
-menu.setWindowTitle(localization.t("menu_title"))
+    menu.setWindowTitle(localization.t("menu_title"))
 
     status_action, enabled_action, update_action, labels = actions
 
