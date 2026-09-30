@@ -12,6 +12,10 @@ STRINGS = {
     "details_project": "Проект: {project_name}",
     "details_no_project": "Проект не открыт",
     "details_unsaved_project": "Проект: Без названия",
+    # Имя технологии, поэтому здесь оно английское - так же, как в
+    # settings_title ниже. Переводить его не нужно, но держать его в
+    # исходниках тоже нельзя: локализовать его должен сам плагин.
+    "menu_title": "Discord RPC",
     "menu_status": "Состояние: {status}",
     "menu_settings": "Настройки...",
     "menu_show_in_discord": "Показывать в Discord",

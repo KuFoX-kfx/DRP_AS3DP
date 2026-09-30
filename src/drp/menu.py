@@ -21,9 +21,6 @@ from .qt import QtWidgets
 from .settings_dialog import build_settings_dialog
 from .status import Status
 
-MENU_TITLE = "Discord RPC"
-
-
 def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
     """Build the plugin menu.
 
@@ -31,7 +28,7 @@ def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
     used to switch the link to Discord. `on_toggle` is called with the
     new enabled state when the user flips the check box.
     """
-    menu = QtWidgets.QMenu(MENU_TITLE)
+    menu = QtWidgets.QMenu(localization.t("menu_title"))
 
     # Disabled, so it reads as a readout rather than an action. Its text
     # is filled in by _refresh once the status is actually known.
@@ -55,7 +52,10 @@ def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
     # Every label above is a translation, and the language is a setting the
     # user can change while the plugin is running, so the wording cannot be
     # frozen at startup. _refresh re-translates all of it every time the
-    # menu is actually opened, together with the status and the check mark.
+    # menu is actually opened, together with the title, the status and the
+    # check mark. The title especially: QMenu takes it in its constructor,
+    # so it is the one string that would otherwise keep the language the
+    # plugin happened to start in.
     labels = (
         (settings_action, "menu_settings"),
         (enabled_action, "menu_show_in_discord"),
@@ -63,7 +63,7 @@ def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
     )
 
     menu.aboutToShow.connect(
-        lambda: _refresh(manager, status_action, enabled_action, labels)
+        lambda: _refresh(menu, manager, status_action, enabled_action, labels)
     )
 
     return menu
@@ -75,12 +75,14 @@ def destroy(menu: QtWidgets.QMenu):
     substance_painter.ui.delete_ui_element(menu)
 
 
-def _refresh(manager, status_action, enabled_action, labels):
+def _refresh(menu, manager, status_action, enabled_action, labels):
     """Bring the menu in line with the current language and status.
 
     Called every time the menu is opened, which is what makes a language
     change take effect without the plugin being reloaded.
     """
+    menu.setWindowTitle(localization.t("menu_title"))
+
     for action, key in labels:
         action.setText(localization.t(key))
 

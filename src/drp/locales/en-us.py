@@ -11,6 +11,10 @@ STRINGS = {
     "details_project": "Project: {project_name}",
     "details_no_project": "No project open",
     "details_unsaved_project": "Project: Untitled",
+    # "Discord RPC" is the name of the technology, so every locale file
+    # spells it the same way, "Discord Rich Presence" included. Being a
+    # locale key is what matters: it gets translated like the rest.
+    "menu_title": "Discord RPC",
     "menu_status": "Status: {status}",
     "menu_settings": "Settings...",
     "menu_show_in_discord": "Show in Discord",
