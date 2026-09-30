@@ -27,6 +27,16 @@ class _AdvancedGroup(QtWidgets.QGroupBox):
 
         self.setCheckable(True)
 
+        # Collapsed every time this dialog opens, and said so outright
+        # rather than left to whatever a fresh QGroupBox happens to
+        # default to - which is what let it sit there looking enabled
+        # with nothing behind it.
+        #
+        # Nothing stores the checkbox between openings on purpose: it is
+        # a disclosure, not a setting, so there is no value to restore and
+        # nothing that could go stale against the settings behind it.
+        self.setChecked(False)
+
         # Rows go straight into this form, the same one the rest of the
         # dialog uses.
         self.form = QtWidgets.QFormLayout()

@@ -126,6 +126,13 @@ class UpdateController(QtCore.QObject):
         self._busy = False
         self._alive = True
 
+        # Whether there is anywhere to check at all, worked out once.
+        # It comes from config.UPDATE_SOURCES, which is a developer
+        # setting and cannot change while Painter runs, and sources()
+        # prints a note for every entry it has to ignore - so asking per
+        # menu opening would repeat those notes forever.
+        self._has_sources = bool(engine.sources(config.UPDATE_SOURCES))
+
         self._progress.connect(self._on_progress)
         self._done.connect(self._on_done)
 
@@ -139,7 +146,7 @@ class UpdateController(QtCore.QObject):
         """Disabled while something is already running, and when there
         is nowhere to check - a button that cannot do anything is worse
         than no button."""
-        return not self._busy and self._engine().sources
+        return not self._busy and self._has_sources
 
     def take_notice(self) -> str:
         """The one-line message to show instead of the Discord status,
