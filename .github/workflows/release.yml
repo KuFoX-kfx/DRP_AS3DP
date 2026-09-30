@@ -12,6 +12,10 @@
 #   2. git tag v<that version> && git push --tags
 # The workflow below does the rest. Pushing the tag alone, without the
 # version bump, fails the build on purpose.
+#
+# The same workflow can also be started by hand from the Actions tab.
+# That path publishes only when the box is ticked, so running it twice
+# to get a second look at a build cannot turn a branch into a release.
 
 name: release
 
@@ -20,6 +24,13 @@ on:
     tags:
       - "v*"
       - "V*"
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Attach the build to that tag's release
+        type: boolean
+        required: false
+        default: false
 
 # Creating the release and attaching assets to it. Nothing else is
 # touched.
@@ -34,19 +45,75 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # What this run is for, decided once so the steps below do not each
+      # have to work it out again.
+      #
+      # A tag push publishes. A tag cannot be pushed by accident and
+      # cannot be aimed at a branch, so the push itself is the intent and
+      # needs no confirmation. A manual run is somebody poking at a build
+      # and may well only want the archive, so it publishes only on the
+      # tick - and asking it to publish a branch is refused, because a
+      # release with no tag is a version the updater will never find.
+      - name: Work out whether this run publishes
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          REF: ${{ github.ref }}
+          REF_NAME: ${{ github.ref_name }}
+          PUBLISH: ${{ inputs.publish }}
+        run: |
+          case "$REF" in
+            refs/tags/*) is_tag=true ;;
+            *)           is_tag=false ;;
+          esac
+
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if [ "$PUBLISH" = "true" ] && [ "$is_tag" != "true" ]; then
+              echo "::error::$REF_NAME is a branch, not a tag. Pick a tag to publish, or leave publish unticked to build the archive and stop there."
+              exit 1
+            fi
+            publish="$PUBLISH"
+          else
+            publish="$is_tag"
+          fi
+
+          # Passed to build.sh as separate words, so an empty value has
+          # to stay empty rather than become a stray empty argument.
+          verify=""
+          if [ "$publish" = "true" ]; then
+            verify="--verify-tag $REF_NAME"
+          fi
+
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "verify=$verify" >> "$GITHUB_OUTPUT"
+          echo "$REF_NAME: publish=$publish"
+
       - name: Build
-        run: bash build/build.sh --verify-tag "${{ github.ref_name }}"
+        env:
+          VERIFY: ${{ steps.mode.outputs.verify }}
+        run: bash build/build.sh $VERIFY
 
       - name: Attach to the release
+        if: steps.mode.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
+          # A release that already exists has its assets replaced instead
+          # of the run failing. Re-running this by hand is the ordinary
+          # way to retry a release whose build died partway through, and
+          # that is exactly when a half-made release is sitting there.
+          #
           # dist/* rather than two named files: build.sh takes the asset
           # names out of src/drp/config.py, so there is nothing here
           # that can drift away from what the updater looks for.
-          gh release create "${{ github.ref_name }}" dist/* \
-            --title "${{ github.ref_name }}" \
-            --generate-notes
+          if gh release view "$REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$REF_NAME" dist/* --clobber
+          else
+            gh release create "$REF_NAME" dist/* \
+              --title "$REF_NAME" \
+              --generate-notes
+          fi
 
       - name: Keep the artifacts around
         uses: actions/upload-artifact@v4
