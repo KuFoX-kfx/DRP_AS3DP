@@ -21,12 +21,15 @@ from .qt import QtWidgets
 from .settings_dialog import build_settings_dialog
 from .status import Status
 
-def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
+
+def create_menu(manager, on_toggle, updates) -> QtWidgets.QMenu:
     """Build the plugin menu.
 
     `manager` is the presence manager, read for the current status and
     used to switch the link to Discord. `on_toggle` is called with the
-    new enabled state when the user flips the check box.
+    new enabled state when the user flips the check box. `updates` is
+    the update controller, which supplies one button and, now and then,
+    a line to say instead of the status.
     """
     menu = QtWidgets.QMenu(localization.t("menu_title"))
 
@@ -44,10 +47,11 @@ def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
     enabled_action.setCheckable(True)
     enabled_action.toggled.connect(on_toggle)
 
-    menu.addSeparator()
+    update_action = menu.addAction("")
+    update_action.triggered.connect(updates.trigger)
 
     about_action = menu.addAction(localization.t("menu_about"))
-    about_action.triggered.connect(lambda: show_about(manager, menu))
+    about_action.triggered.connect(lambda: show_about(manager, updates, menu))
 
     # Every label above is a translation, and the language is a setting the
     # user can change while the plugin is running, so the wording cannot be
@@ -62,9 +66,12 @@ def create_menu(manager, on_toggle) -> QtWidgets.QMenu:
         (about_action, "menu_about"),
     )
 
-    menu.aboutToShow.connect(
-        lambda: _refresh(menu, manager, status_action, enabled_action, labels)
-    )
+# The update button is not in `labels`: its wording comes from the
+    # controller, which is the only thing that knows whether it is
+    # about to check, install, or give up.
+    actions = (status_action, enabled_action, update_action, labels)
+
+    menu.aboutToShow.connect(lambda: _refresh(menu, manager, updates, actions))
 
     return menu
 
@@ -75,20 +82,35 @@ def destroy(menu: QtWidgets.QMenu):
     substance_painter.ui.delete_ui_element(menu)
 
 
-def _refresh(menu, manager, status_action, enabled_action, labels):
+def _refresh(menu, manager, updates, actions):
     """Bring the menu in line with the current language and status.
 
     Called every time the menu is opened, which is what makes a language
-    change take effect without the plugin being reloaded.
+    change take effect without the plugin being reloaded - and what puts
+    the update button back to normal after an update ran in the
+    background while the menu was shut.
     """
-    menu.setWindowTitle(localization.t("menu_title"))
+menu.setWindowTitle(localization.t("menu_title"))
+
+    status_action, enabled_action, update_action, labels = actions
 
     for action, key in labels:
         action.setText(localization.t(key))
 
-    status_action.setText(
-        localization.t("menu_status", status=status.label(manager.status))
-    )
+    # A notice about a just-installed version outranks the Discord
+    # status for exactly one menu opening - it is the more useful of the
+    # two things to say at that moment.
+    notice = updates.take_notice()
+
+    if notice:
+        status_action.setText(notice)
+    else:
+        status_action.setText(
+            localization.t("menu_status", status=status.label(manager.status))
+        )
+
+    update_action.setText(localization.t(updates.button_key()))
+    update_action.setEnabled(updates.button_enabled())
 
     # Without this, setting the check mark programmatically would emit
     # toggled() and switch the plugin off the moment the menu is opened.
@@ -107,7 +129,7 @@ def _open_settings(parent):
         settings.apply(dialog.values())
 
 
-def show_about(manager, parent=None):
+def show_about(manager, updates, parent=None):
     """Report the plugin version, the Discord application in use, where
     the settings are stored, and what the last failure was."""
     lines = [
@@ -119,6 +141,11 @@ def show_about(manager, parent=None):
 
     if manager.last_error:
         lines.append(localization.t("about_last_error", error=manager.last_error))
+
+    update_error = updates.error_text()
+
+    if update_error:
+        lines.append(localization.t("about_last_update_error", error=update_error))
 
     box = QtWidgets.QMessageBox(parent)
     box.setWindowTitle(localization.t("menu_about"))

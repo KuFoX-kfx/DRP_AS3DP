@@ -28,13 +28,26 @@ FILE_NAME = "settings.json"
 BACKUP_SUFFIX = ".bak"
 
 # name -> expected type. Adding a setting means adding it here, to
-# LIMITS if it is numeric, and to config.py for the default.
+# LIMITS if it is numeric, to _TEXT_CHECKS if a plain type check cannot
+# judge it, and to config.py for the default.
 FIELDS = {
     "SHOW_PROJECT_NAME": bool,
     "SHOW_ELAPSED_TIME": bool,
     "UPDATE_INTERVAL": int,
     "RECONNECT_INTERVAL": int,
     "ACTIVE_LOCALE": str,
+    "AUTO_UPDATE": bool,
+    "CHECK_UPDATES": bool,
+    "API_TOKEN": str,
+}
+
+# Extra checks for the string settings, which a type check alone cannot
+# judge. Anything not listed here accepts any string - which is the
+# right answer for a token the user typed, and the wrong one for a
+# locale, since a language nobody has a file for would break every
+# lookup that follows it.
+_TEXT_CHECKS = {
+    "ACTIVE_LOCALE": lambda value: value in localization.available_locales(),
 }
 
 # Inclusive (minimum, maximum) for the numeric settings. The settings
@@ -97,7 +110,8 @@ def _sanitize(name: str, value):
             and low <= value <= high
         )
     else:
-        valid = isinstance(value, str) and value in localization.available_locales()
+        check = _TEXT_CHECKS.get(name)
+        valid = isinstance(value, str) and (check is None or check(value))
 
     return value if valid else DEFAULTS[name]
 

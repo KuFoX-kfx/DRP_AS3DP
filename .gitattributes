@@ -1,2 +1,15 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Endings that must survive whatever core.autocrlf happens to say.
+#
+# core.autocrlf is true on most Windows checkouts, so without this a fresh
+# clone here hands us build/build.sh with CRLF. bash reads the \r as part
+# of the command it is running, and the script dies on its first line -
+# including the shebang when it is executed rather than passed to bash.
+# CI runs on Linux, where autocrlf does not apply, so this is only ever
+# about building locally on Windows.
+*.sh text eol=lf
+
+# The CI runners read these as data, not as text to be lenient about.
+*.yml text eol=lf

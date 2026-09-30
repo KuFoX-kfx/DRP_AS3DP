@@ -20,6 +20,9 @@ nothing else to configure - the status shows up as soon as you enable the
 plugin. If it doesn't, see
 [Discord application and icons](#discord-application-and-icons).
 
+An installed copy can replace itself from a later release, so this only has
+to be done once. See [Updates](#updates).
+
 ## Configuration
 
 ### Settings
@@ -32,6 +35,7 @@ Discord RPC ▾
 ├── Status: Connected
 ├── Settings...
 ├── [✓] Show in Discord
+├── Check for updates
 └── About DRP AS3DP
 ```
 
@@ -46,15 +50,26 @@ plugin; check it again to resume.
 
 **Settings...** offers:
 
-| Setting              | Effect                                          | Range      |
-| -------------------- | ----------------------------------------------- | ---------- |
-| Show project name    | Off sends only the activity, never the name      |            |
-| Show elapsed time    | Off hides the session timer                      |            |
-| Update interval      | Seconds between activity refreshes               | 5 - 300    |
-| Reconnect interval   | Seconds between reconnect attempts               | 5 - 600    |
-| Language             | Any locale in `src/drp/locales/`                 |            |
+| Setting                        | Effect                                        | Range      |
+| ------------------------------ | --------------------------------------------- | ---------- |
+| Show project name              | Off sends only the activity, never the name    |            |
+| Show elapsed time              | Off hides the session timer                    |            |
+| Update interval                | Seconds between activity refreshes             | 5 - 300    |
+| Reconnect interval             | Seconds between reconnect attempts             | 5 - 600    |
+| Language                       | Any locale in `src/drp/locales/`               |            |
+| Install updates automatically  | Off means an update is offered, not installed  |            |
 
 Changes take effect immediately - no restart, and no reload of the plugin.
+
+Behind a collapsed **Advanced** group are two settings almost nobody needs:
+whether to look for updates at startup, and an API token for the release
+sources. The group is closed by default and says so, because the token is
+only useful when a release source stops answering anonymous requests.
+
+The update button in the menu is one button in four states - *Check for
+updates*, *Checking for updates...*, *Update*, *Updating...* - which turns
+into *Update failed* if something goes wrong, so a problem you cannot act on
+is still visible but a second press retries. See [Updates](#updates).
 
 ### Where the settings are stored
 
@@ -72,25 +87,170 @@ If the plugin folder can't be written to - a system-wide install, typically -
 settings apply for the session and the dialog says so, instead of pretending
 to have saved them.
 
+`settings.json` is not in the release zip and is carried across an update, so
+upgrading never costs you your settings.
+
+### `config.py` and `settings.json` are two different things
+
+Both use the same *names*. What differs is who they are for, and the split is
+deliberate - it is what lets a fork be a fork.
+
+|                | `config.py`                           | `settings.json`                 |
+| -------------- | ------------------------------------- | ------------------------------- |
+| Owner          | whoever built this copy of the plugin | the person using it             |
+| Edited through | a text editor, in the source          | the Settings dialog, or by hand |
+| Shipped in zip | yes                                   | no                              |
+| Value means    | what *this build* is                  | what *this user* chose          |
+
+`config.py` describes the build: the Discord application, where releases come
+from, how long to wait for them. Changing one is what you do when you fork it
+and ship your own. A user never opens it.
+
+`settings.json` describes the user: the language, the intervals, whether to
+install updates without being asked. The values behind them in `config.py` are
+only the defaults a fresh installation starts from, and the user's choices
+always win.
+
+So `CLIENT_ID` is a constant and `ACTIVE_LOCALE` is not - the locale in effect
+is the user's setting, and `config.ACTIVE_LOCALE` is merely what a fresh
+install begins with.
+
 ### Developer constants
 
-Everything else is in `src/drp/config.py`. These are the *defaults*: changing
-one changes what a fresh install starts from, and what **Restore defaults**
-puts back. The released zip ships a working `CLIENT_ID`, so you normally have
-nothing to change here.
+| Setting              | Effect                                                            |
+| -------------------- | ----------------------------------------------------------------- |
+| `PLUGIN_VERSION`     | Shown in the About box, and what an update is compared against      |
+| `CLIENT_ID`          | Discord application ID - the bundled one is fine                    |
+| `LARGE_IMAGE_KEY`    | Large icon asset key                                                |
+| `LARGE_IMAGE_TEXT`   | Hover text over the large icon                                      |
+| `FALLBACK_LOCALE`    | Locale used for missing keys, should stay `"en-us"`                 |
 
-| Setting              | Effect                                                     |
-| -------------------- | ---------------------------------------------------------- |
-| `PLUGIN_VERSION`     | Shown in the About box                                     |
-| `CLIENT_ID`          | Discord application ID - the bundled one is fine           |
-| `LARGE_IMAGE_KEY`    | Large icon asset key                                       |
-| `LARGE_IMAGE_TEXT`   | Hover text over the large icon                             |
-| `FALLBACK_LOCALE`    | Locale used for missing keys, should stay `"en-us"`        |
+Everything else in the file is a default behind a setting in the table above,
+or belongs to the update machinery described next. The released zip ships a
+working `CLIENT_ID`, so you normally have nothing to change here.
 
-`SHOW_PROJECT_NAME`, `SHOW_ELAPSED_TIME`, `UPDATE_INTERVAL`,
-`RECONNECT_INTERVAL` and `ACTIVE_LOCALE` live here too - they are the defaults
-behind the settings above, and are only worth editing if you're building your
-own version.
+`PLUGIN_VERSION` is the single source of truth for the version. A release tag
+is exactly `v` plus this value, and the build refuses to publish a tagged
+commit where the two disagree - see [Cutting a release](#cutting-a-release).
+
+## Updates
+
+The plugin can update itself. It asks the release sources listed in
+`config.UPDATE_SOURCES` whether something newer exists, and if so downloads
+the release zip, checks it against the published checksum, unpacks it over its
+own folder and reloads itself - without restarting Painter.
+
+### The button
+
+There is exactly one update button, in the plugin menu, and its wording is
+what it is about to do: *Check for updates* when idle, *Checking for
+updates...* while it asks, *Update* when there is something to install,
+*Updating...* while it installs, *Update failed* when it gave up. It is
+disabled while busy, and when no usable source is configured, because a
+button that cannot do anything is worse than no button.
+
+An update the user started shows a small progress window with a Cancel
+button, and the menu closes first so the window is not behind it. A check
+that finds nothing shows nothing: a dialog that flashes up and vanishes
+again is worse than no dialog.
+
+### At startup
+
+Five seconds after Painter starts - a delay set by
+`config.UPDATE_STARTUP_DELAY` - the plugin checks once on a background
+thread. Painter is fully working by then, and the network is never touched
+while the application is still starting up.
+
+One setting decides what happens next:
+
+- **Install updates automatically** (default on) installs the new version
+  with no question asked and no window. That is what makes it automatic:
+  asking first would only move the question to the moment the user opens the
+  menu. After the reload the status line says `Updated to 1.1.0` the next
+  time the menu is opened.
+- Off changes the button to *Update* instead, and nothing is installed until
+  it is pressed.
+
+Turning the startup check off entirely - **Advanced → Look for updates when
+the plugin starts** - does not remove the button; it still checks whenever it
+is pressed.
+
+### Sources
+
+Where releases come from is *not* a user setting. It lives in `config.py`,
+and that is the point: a user should never be asked where their own plugin
+comes from, and a fork should never need a user to configure anything.
+
+```python
+UPDATE_SOURCES = [
+    {
+        "kind": "github",
+        "path": "KuFoX-kfx/DRP_AS3DP",
+    },
+]
+```
+
+Each entry is asked in order, and the first one that produces a verified
+archive wins:
+
+| Key      | Meaning                                                                                                                       |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `kind`   | `"github"` or `"gitlab"` - which release API to read. Required                                                                 |
+| `path`   | `owner/repo`, or `group/subgroup/project`. Required                                                                            |
+| `host`   | Optional; defaults to `github.com` / `gitlab.com`                                                                              |
+| `scheme` | Optional; `https` unless the host really serves plain HTTP                                                                     |
+| `api`    | Optional; the API base URL. GitHub Enterprise serves it from `https://<host>/api/v3`, a sub-path GitLab from `https://<host>/<sub>/api/v4` |
+| `name`   | Optional; what to call this source in the progress line                                                                        |
+
+A second entry is a mirror, tried after the first: a mirror that is down or
+rate-limited costs a delay, not the update. An entry naming a kind nothing
+implements, or missing a path, is skipped with a note in the log rather than
+breaking updates entirely.
+
+So a fork publishing to GitLab, or to a self-hosted instance of either, is a
+change to this list and nothing else. GitHub and GitLab are read through their
+own official APIs, so a release published by [the CI
+below](#cutting-a-release) on either platform installs the same way.
+
+### Integrity
+
+The archive is checked against `<asset>.sha256` - the `sha256sum` output
+published next to it - before a single file is unpacked. An archive that does
+not match is not installed, and a checksum that cannot be read counts as *no*
+checksum, not as a pass.
+
+The archive is also treated as untrusted input: entries that would be written
+outside the plugin folder, and entries that are symbolic links, are refused,
+and the archive has to contain exactly one package folder to be installable at
+all.
+
+The plugin folder is then replaced by a rename-swap - the old one moved aside,
+the new one moved in, the old one deleted - so there is never a half-written
+folder and nothing is left behind afterwards.
+
+An attempt is one full pass over the source list. A source that cannot be
+reached, or whose archive fails verification, only moves the pass on to the
+next one. An archive that will not unpack ends the attempt, and
+`config.UPDATE_ATTEMPTS` (2) bounds how many are started.
+
+### API tokens
+
+Optional, in the **Advanced** group of the settings dialog, and not needed for
+a public repository: a token only helps when the anonymous request limit is in
+the way, or the repository is private. One token is used for every source,
+whatever host they are on - GitHub is sent `Authorization`, GitLab
+`PRIVATE-TOKEN`.
+
+### When something goes wrong
+
+Nothing is announced on its own. An automatic update that fails is silent -
+there is nothing the user could have done differently and nothing to press -
+but the reason is remembered and shown in the **About** box, next to the last
+Discord failure. An update the user started says so on the button as well.
+
+If the plugin cannot be reloaded after a successful update - which should not
+happen, but a broken build would manage it - a message box asks for a restart
+of Painter.
 
 ## Discord application and icons
 
@@ -174,16 +334,37 @@ Want to help translate the plugin into your language? Great! Here's how:
 ./build/build.sh
 ```
 
-That is the only build script, and it produces `dist/DRP_AS3DP-python.zip`.
+That is the only build script. It produces two files:
+
+```
+dist/DRP_AS3DP-python.zip
+dist/DRP_AS3DP-python.zip.sha256
+```
+
+The checksum is not an optional extra: the plugin refuses to install an
+archive that does not match a published checksum, so a release without the
+second file cannot be installed at all.
+
+Both names are read out of `src/drp/config.py` at build time - the script
+has no constants of its own for them - so the file the build produces and
+the file an installed copy looks for are the same name by construction
+rather than by agreement.
+
+```bash
+bash build/build.sh --verify-tag v1.1.0   # build, and insist the tag matches
+bash build/build.sh --help                # the same usage text
+```
+
 On Windows, run it from a Git Bash shell: `bash build/build.sh`.
 
 ### Required tools
 
-`bash`, `curl`, `tar` and `zip`.
+`bash`, `curl`, `tar` and `zip`, plus `sha256sum` or `shasum`.
 
-On Linux and macOS all four come with the system. On Windows the easiest
+On Linux and macOS all of these come with the system. On Windows the easiest
 route is [Git for Windows](https://gitforwindows.org/), which provides
-bash, curl and tar - but **not** `zip`, which has to be added separately:
+bash, curl, tar and `sha256sum` - but **not** `zip`, which has to be added
+separately:
 
 ```bat
 choco install zip
@@ -220,6 +401,56 @@ A consequence of this: the plugin cannot be run straight from a fresh
 clone, because `src/drp/vendor/` does not exist until a build has filled
 it in. Build once, and the folder is ready to drop into Painter.
 
+## Cutting a release
+
+One rule, and everything else follows from it: **a release tag is exactly
+`v` plus `PLUGIN_VERSION` in `src/drp/config.py`.**
+
+```bash
+# 1. bump PLUGIN_VERSION in src/drp/config.py
+# 2. commit and push
+git add src/drp/config.py && git commit -m "Release 1.1.0" && git push
+
+# 3. tag it
+git tag v1.1.0 && git push --tags
+```
+
+The tag is what every installed copy compares its installed version
+against, so publishing 1.1.0 under the tag `v1.0.0` would leave every user
+on the old build forever - updating would be looking for a release that
+does not exist. The build is handed the tag CI was triggered by and refuses
+to build anything when the two disagree, rather than reporting the mistake
+afterwards.
+
+`build/build.sh` also checks a tagged commit on its own, so a local release
+built from the wrong commit fails the same way. An untagged checkout - most
+of development - skips the check and says so.
+
+### The publishing pipelines
+
+Both are tag-triggered and do the same three things: run `build/build.sh`
+with the tag, attach both files to that tag's release, and keep the
+artifacts. Neither repeats the asset names - they glob what the build
+produced, so there is nothing that can drift away from what the updater
+looks for.
+
+**GitHub Actions** (`.github/workflows/release.yml`) needs no setup: it runs
+on a push of a `v*` or `V*` tag and uses the built-in `GITHUB_TOKEN`.
+
+**GitLab CI** (`.gitlab-ci.yml`) needs one variable, under
+**Settings → CI/CD → Variables**, marked *Masked*:
+
+| Variable        | Value                                                        |
+| --------------- | ------------------------------------------------------------ |
+| `RELEASE_TOKEN` | a project access token with the `api` scope                  |
+
+A job token cannot upload release assets, which is why a real token is
+needed. Create one under **Settings → Access Tokens**, give it `api` and
+nothing else.
+
+Both files are written to work on a self-managed instance unchanged: every
+host and path they use comes from the CI system's own variables.
+
 ## Project layout
 
 ```
@@ -229,16 +460,25 @@ src/ddp/                     source artwork for the Discord art assets
 src/drp/                     the plugin's own code; what ships, plus
                              the dependencies build.sh downloads
     __init__.py              entry point: start_plugin() / close_plugin();
-                             owns the timers and reacts to settings
-    config.py                the default for every tunable constant
+                             owns the timers, reacts to settings, and
+                             reloads the package after an update
+    config.py                internal constants: the build's own identity,
+                             its release sources, and the defaults of every
+                             user setting
     settings.json            the user's own settings (created at runtime,
                              gitignored, not shipped in the zip)
     settings.py              reads/validates settings.json, knows no Qt
     settings_dialog.py       the settings form; produces values, saves nothing
     menu.py                  the plugin's own menu, with the status readout
+                             and the one update button
     status.py                what we know about the Discord link, and its wording
     qt.py                    PySide2 or PySide6, whichever Painter ships
     state.py                 the States the plugin can report (enum)
+    version.py               version parsing and the one "is it newer" rule
+    updater.py               the update engine: sources, download, checksum,
+                             unpack, folder swap - no Qt in here
+    update_controller.py     when to check, what the button says, the
+                             progress window, the reload trigger
     presence_manager.py      talks to Discord, knows nothing about Painter
     events.py                talks to Painter, knows nothing about Discord
     localization.py          locale loader with fallback to FALLBACK_LOCALE
@@ -249,8 +489,10 @@ src/drp/                     the plugin's own code; what ships, plus
 
 build/
     build.sh                 packaging script: copies the plugin, downloads
-                             its dependencies, writes the zip
+                             its dependencies, writes the zip and checksum
 
+.github/workflows/release.yml   tag -> build -> GitHub release
+.gitlab-ci.yml                   tag -> build -> GitLab release
 dist/                        build output, not tracked by git
 README.md                    this file
 ```
@@ -267,8 +509,10 @@ time and pinned by `PYPRESENCE_VERSION` at the top of that script:
 
 - [qwertyquerty/pypresence](https://github.com/qwertyquerty/pypresence) - MIT License
 
-Its `LICENSE` is copied into the shipped package alongside the code, so
-the zip carries the terms of the code it contains.
+Its `LICENSE` is copied into the shipped package alongside the code, so the
+zip carries the terms of the code it contains. If a build warns that a
+dependency shipped no licence file, add one to the zip by hand rather than
+ignoring the warning.
 
 ## Contributors
 

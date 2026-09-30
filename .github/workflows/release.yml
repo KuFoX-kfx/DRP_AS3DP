@@ -1,0 +1,55 @@
+# Builds a release from a tag and attaches it to that tag's release.
+#
+# The rule is one line: a release tag is exactly "v" + PLUGIN_VERSION in
+# src/drp/config.py. build/build.sh is given the tag this workflow was
+# triggered by and refuses to build anything if the two disagree, so a
+# version can never be published under the wrong tag - which would leave
+# every installed copy comparing itself against a release that does not
+# exist and updating never.
+#
+# To cut a release:
+#   1. change PLUGIN_VERSION in src/drp/config.py, commit, push
+#   2. git tag v<that version> && git push --tags
+# The workflow below does the rest. Pushing the tag alone, without the
+# version bump, fails the build on purpose.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+      - "V*"
+
+# Creating the release and attaching assets to it. Nothing else is
+# touched.
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build
+        run: bash build/build.sh --verify-tag "${{ github.ref_name }}"
+
+      - name: Attach to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # dist/* rather than two named files: build.sh takes the asset
+          # names out of src/drp/config.py, so there is nothing here
+          # that can drift away from what the updater looks for.
+          gh release create "${{ github.ref_name }}" dist/* \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
+
+      - name: Keep the artifacts around
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin
+          path: dist/

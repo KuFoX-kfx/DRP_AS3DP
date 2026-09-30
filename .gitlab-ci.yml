@@ -1,0 +1,92 @@
+# Builds a release from a tag and attaches it to that tag's release.
+#
+# The GitLab twin of .github/workflows/release.yml, and deliberately
+# built on the same two files: build/build.sh produces the plugin zip and
+# its checksum, and is handed the tag this pipeline was triggered by so it
+# can refuse to build when the tag is not exactly "v" + PLUGIN_VERSION.
+#
+# To cut a release:
+#   1. change PLUGIN_VERSION in src/drp/config.py, commit, push
+#   2. git tag v<that version> && git push --tags
+#
+# Required CI/CD variable (Settings > CI/CD > Variables, masked):
+#
+#   RELEASE_TOKEN   a project access token with the "api" scope.
+#
+# It is needed because uploading assets to a release goes through the
+# API, and a job token cannot do that. Create one under
+# Settings > Access Tokens, give it "api" and nothing else.
+#
+# The release is created with curl against $CI_API_V4 rather than with
+# the release-cli image, for two reasons that matter in practice: the
+# assets have to be uploaded before this job ends, and a release-cli job
+# can only do that by calling the same API anyway; and every URL here
+# comes from the pipeline's own variables, so the file works unchanged on
+# a self-managed instance.
+
+stages:
+  - build
+  - release
+
+default:
+  image: alpine:3.20
+  before_script:
+    # build.sh needs bash, curl, tar, zip and a sha256 tool. None of them
+    # are in a bare alpine image.
+    - apk add --no-cache bash curl tar zip coreutils
+
+# Only tag pipelines do anything: a branch pipeline would rebuild the
+# same commit without producing a release. The same tags GitHub reacts
+# to, so a repository mirrored between the two behaves identically.
+workflow:
+  rules:
+    - if: $CI_COMMIT_TAG =~ /^[vV]/
+    - when: never
+
+build:
+  stage: build
+  script:
+    - bash build/build.sh --verify-tag "$CI_COMMIT_TAG"
+  artifacts:
+    # Whatever build.sh produced, named by nothing in particular: the
+    # release job globs the folder rather than repeating the asset names
+    # from config.py here, where they could quietly go out of date.
+    name: plugin
+    paths:
+      - dist/
+    expire_in: 1 day
+
+release:
+  stage: release
+  needs:
+    - job: build
+      artifacts: true
+  script:
+    - echo "Publishing release $CI_COMMIT_TAG"
+
+    # Created only if it is not there already, so a retried pipeline
+    # finishes rather than failing on a release that already exists.
+    - |
+      if [ "$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --header "PRIVATE-TOKEN: $RELEASE_TOKEN" \
+            "$CI_API_V4/projects/$CI_PROJECT_ID/releases/$CI_COMMIT_TAG")" = "404" ]; then
+        echo "Creating the release"
+        curl --fail --request POST \
+          --header "PRIVATE-TOKEN: $RELEASE_TOKEN" \
+          --data "{\"tag_name\":\"$CI_COMMIT_TAG\",\"ref\":\"$CI_COMMIT_SHA\"}" \
+          "$CI_API_V4/projects/$CI_PROJECT_ID/releases"
+      else
+        echo "Release $CI_COMMIT_TAG already exists; attaching the assets to it"
+      fi
+
+    # The archive and its checksum, whichever they happen to be called:
+    # build.sh took both names out of src/drp/config.py, so there is
+    # nothing here that can disagree with what the updater looks for.
+    - |
+      for asset in dist/*; do
+        echo "Uploading $(basename "$asset")"
+        curl --fail --silent --show-error --location \
+          --header "PRIVATE-TOKEN: $RELEASE_TOKEN" \
+          --upload-file "$asset" \
+          "$CI_API_V4/projects/$CI_PROJECT_ID/releases/$CI_COMMIT_TAG/assets?name=$(basename "$asset")"
+      done
