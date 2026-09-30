@@ -32,7 +32,7 @@ and is not meant to be edited as one - see its comment below.
 # release published from this commit must be tagged exactly
 # "v" + this value. build/build.sh refuses to build a tagged commit
 # where the two disagree.
-PLUGIN_VERSION = "1.1.0"
+PLUGIN_VERSION = "1.2.0"
 
 # --- Discord application --------------------------------------------------
 # Application (client) ID from https://discord.com/developers/applications
